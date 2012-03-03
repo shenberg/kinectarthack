@@ -28,6 +28,8 @@
 
 			uniform sampler2D map;
 
+			uniform float size;
+
 			uniform float width;
 			uniform float height;
 			uniform float nearClipping, farClipping;
@@ -58,7 +60,7 @@
 					- z + 1000.0,
 					1.0);
 
-				gl_PointSize = 2.0;
+				gl_PointSize = size; // 2.0;
 				gl_Position = projectionMatrix * modelViewMatrix * pos;
 
 			}
@@ -176,11 +178,14 @@
 					geometry.vertices.push( new THREE.Vertex( position ) );
 
 				}
+				// whee, js global variables. modify "value" to change particle size
+				particleSize = {type:'f', value: 2.0}
 
 				material = new THREE.ShaderMaterial( {
 
+					//attributes : particleAttributes,
 					uniforms: {
-
+						"size" : particleSize,
 						"map": { type: "t", value: 0, texture: texture },
 						"width": { type: "f", value: width },
 						"height": { type: "f", value: height },
@@ -245,10 +250,10 @@
 			
 			var plugin = document.getElementById("ZigPlugin");
 		    try {
-	           plugin.requestStreams(true, true, false);
+	           plugin.requestStreams(true, false, false);
 	        } catch(e) {
 	            console.log('new style plugin');
-	            plugin.requestStreams({updateDepth: true, updateImage: true, updateLabelMap : false});
+	            plugin.requestStreams({updateDepth: true, updateImage: false, updateLabelMap : false});
 	        }
 			plugin.addEventListener("NewFrame", function() { 
 				drawDM(plugin, canvas);
