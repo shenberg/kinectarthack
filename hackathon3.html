@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Hand visualization</title>
+
+<script src='http://cdn.zigfu.com/zigjs/zig.min.js'></script>
+
+<script type="text/javascript">
+function loaded() {
+
+    //load canvas
+    var canvas=document.getElementById('test');
+    var ctx = canvas.getContext('2d');
+    var draw = false;
+
+    ctx.strokeStyle = "#ff0000";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+
+//    var elt = document.getElementById("btn");
+
+    // Create cursor and cursor dom element
+    var c = zig.controls.Cursor();
+    var ce = document.createElement('div');
+    ce.id = 'mycursor';
+    document.body.appendChild(ce);
+
+    // 1. show/hide cursor on session start/end
+    zig.singleUserSession.addEventListener('sessionstart', function(focusPosition) {
+        ce.style.display = 'block';
+    });
+    zig.singleUserSession.addEventListener('sessionend', function() {
+        ce.style.display = 'none';
+    });
+
+    // 2. move the cursor element on cursor move
+    c.addEventListener('move', function(cursor) {
+        ce.style.left = (c.x * window.innerWidth - (ce.offsetWidth / 2)) + "px";
+        ce.style.top = (c.y * window.innerHeight - (ce.offsetHeight / 2)) + "px";
+        
+        console.log("%o %o", c.x, c.y);
+        if(draw){
+            var x,y;
+            x = Math.round(c.x * canvas.width);
+            y = Math.round(c.y * canvas.height);
+            ctx.beginPath();
+            ctx.moveTo(x,y);
+            ctx.arc(x, y, 10, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.fill();
+        }
+    });
+
+    // 3. Add/remove 'pushed' class on cursor push/release
+    c.addEventListener('push', function(c) {
+        ce.classList.add('pushed');
+    });
+    c.addEventListener('release', function(c) {
+        ce.classList.remove('pushed');
+        draw = !draw;  // toggle draw state
+    });
+
+/*
+    // 4. Simulate mouse click on our virtual cursor
+    c.addEventListener('click', function(c) {
+        var xpos = c.x * window.innerWidth;
+        var ypos = c.y * window.innerHeight;
+        var evt = document.createEvent("MouseEvents");
+        evt.initMouseEvent("click", true, true, window, 1, xpos, ypos, xpos, ypos, false, false, false, false, 0, null);
+        //elt.dispatchEvent(evt);
+    });
+*/
+
+    // Add cursor to our single user UI session
+    zig.singleUserSession.addListener(c);
+}
+
+document.addEventListener('DOMContentLoaded', loaded, false);
+
+</script>
+
+<style>
+    #mycursor {
+        position: fixed;
+        display : none; /* hidden until a session starts */
+        width : 40px;
+        height : 40px;
+        background-color: blue;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+    }
+     
+    #mycursor.pushed {
+        background-color: red;
+    }
+</style>
+
+</head>
+<body>
+
+<!-- button id="btn" onclick="alert('Hello World')">Click Me</button -->
+<canvas id="test" width="700" height="400" style="border:1px solid black"></canvas>
+
+</body>
+</html>
