@@ -64,7 +64,7 @@ float snoise(vec2 v)
                       0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
                      -0.577350269189626,  // -1.0 + 2.0 * C.x
                       0.024390243902439); // 1.0 / 41.0
-// First corner
+//+ First corner
   vec2 i  = floor(v + dot(v, C.yy) );
   vec2 x0 = v -   i + dot(i, C.xx);
 
@@ -114,7 +114,6 @@ float snoise(vec2 v)
 
 			uniform float width;
 			uniform float height;
-			uniform float nearClipping, farClipping;
 
 			varying vec2 vUv;
 
@@ -162,6 +161,7 @@ float snoise(vec2 v)
 
 		</script>
     <script>
+    	var bias = [-330, 30];
 
 
         var container;
@@ -170,7 +170,7 @@ float snoise(vec2 v)
         var geometry, cube, mesh, material;
         var mouse, center;
         var stats;
-        var mouseLock = false;
+        var mouseLock = true;
 
         var video, texture;
 
@@ -217,8 +217,6 @@ float snoise(vec2 v)
             texture.magFilter = THREE.NearestFilter;
 
             var width = 160, height = 120;
-            //var nearClipping = 850/*850*/, farClipping = 4000/*4000*/;
-            var nearClipping = 0/*850*/, farClipping = 10000/*4000*/;
 
             geometry = new THREE.Geometry();
 
@@ -246,8 +244,6 @@ float snoise(vec2 v)
                     "map": { type: "t", value: 0, texture: texture },
                     "width": { type: "f", value: width },
                     "height": { type: "f", value: height },
-                    "nearClipping": { type: "f", value: nearClipping },
-                    "farClipping": { type: "f", value: farClipping }
 
                 },
                 vertexShader: document.getElementById('vs').textContent,
@@ -308,9 +304,8 @@ float snoise(vec2 v)
         }
 
         function render() {
-        //TODO:disable mouse
-	//camera.position.x = 0;
-//camera.position.y = 0;
+			//camera.position.x = 0;
+			//camera.position.y = 0;
             camera.position.x += (mouse.x - camera.position.x) * 0.05;
             camera.position.y += (-mouse.y - camera.position.y) * 0.05;
             camera.lookAt(center);
@@ -513,12 +508,12 @@ float snoise(vec2 v)
         
             //load canvas
             //var canvas = document.getElementById('test');
-            var ctx = canvas.getContext('2d');
-            var draw = false;
+            //var ctx = canvas.getContext('2d');
+            //var draw = false;
 
-            ctx.strokeStyle = "#ff0000";
-            ctx.lineWidth = 3;
-            ctx.lineCap = "round";
+            //ctx.strokeStyle = "#ff0000";
+            //ctx.lineWidth = 3;
+            //ctx.lineCap = "round";
 
             var faderValue = 0.0;
 
@@ -593,7 +588,8 @@ float snoise(vec2 v)
 				gl_PointSize = 2.0 + size*(noiseFactor + 0.5); // 2.0;
 				gl_Position = projectionMatrix * modelViewMatrix * pos;
                 */
-                    cube.position.set(handPosition[0], handPosition[1], 1000.0-handPosition[2]);
+                	hp = handPosition;
+                    cube.position.set(handPosition[0]+bias[0], handPosition[1]+bias[1], 1000.0-handPosition[2]);
 
                     scene.add(cube);
 
