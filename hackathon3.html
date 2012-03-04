@@ -17,6 +17,8 @@ function loaded() {
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
 
+    var faderValue = 0.0;
+
 //    var elt = document.getElementById("btn");
 
     // Create cursor and cursor dom element
@@ -25,26 +27,55 @@ function loaded() {
     ce.id = 'mycursor';
     document.body.appendChild(ce);
 
-    // 1. show/hide cursor on session start/end
-    zig.singleUserSession.addEventListener('sessionstart', function(focusPosition) {
-        ce.style.display = 'block';
-    });
-    zig.singleUserSession.addEventListener('sessionend', function() {
-        ce.style.display = 'none';
+
+    console.log("Browser plugin installed: " + zig.pluginInstalled);
+    console.log("Browser plugin version: " + zig.pluginVersion);
+    console.log("Zig.js version: " + zig.version);
+    zig.addEventListener('statuschange', function() {
+        console.log("Sensor connected: " + zig.sensorConnected);
     });
 
+    // Adding Fader
+    var f = zig.controls.Fader(zig.Orientation.Z);
+    f.addEventListener('valuechange', function (f) {
+        //console.log('Fader value: ' + (f.value));
+    })
+    zig.singleUserSession.addListener(f);
+
+
+    // Adding swipe detector
+    var swipeDetector = zig.controls.SwipeDetector();
+    swipeDetector.addEventListener('swipe', function (dir) {
+        console.log('SwipeDetector: Swipe direction: ' + dir);
+    });
+    zig.singleUserSession.addListener(swipeDetector);
+
+
+    console.log("Adding sessionstart and sessionend listeners");
+
+    // 1. show/hide cursor on session start/end
+    zig.singleUserSession.addEventListener('sessionstart', function (focusPosition) {
+        ce.style.display = 'block';
+        console.log("sessionstart");
+    });
+    zig.singleUserSession.addEventListener('sessionend', function () {
+        ce.style.display = 'none';
+        console.log("sessionend");
+    });
+    ctx.beginPath();
     // 2. move the cursor element on cursor move
-    c.addEventListener('move', function(cursor) {
+    c.addEventListener('move', function (cursor) {
         ce.style.left = (c.x * window.innerWidth - (ce.offsetWidth / 2)) + "px";
         ce.style.top = (c.y * window.innerHeight - (ce.offsetHeight / 2)) + "px";
-        
-        console.log("%o %o", c.x, c.y);
-        if(draw){
-            var x,y;
+
+        //console.log("%o %o", c.x, c.y);
+        if (true/*draw*/) {
+            var x, y;
             x = Math.round(c.x * canvas.width);
             y = Math.round(c.y * canvas.height);
             ctx.beginPath();
-            ctx.moveTo(x,y);
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y);
             ctx.arc(x, y, 10, 0, Math.PI * 2, true);
             ctx.closePath();
             ctx.fill();
@@ -54,11 +85,15 @@ function loaded() {
     // 3. Add/remove 'pushed' class on cursor push/release
     c.addEventListener('push', function(c) {
         ce.classList.add('pushed');
+        console.log("push")
     });
-    c.addEventListener('release', function(c) {
+    /*
+    c.addEventListener('release', function (c) {
         ce.classList.remove('pushed');
         draw = !draw;  // toggle draw state
+        console.log("release");
     });
+    */
 
 /*
     // 4. Simulate mouse click on our virtual cursor
@@ -104,7 +139,7 @@ document.addEventListener('DOMContentLoaded', loaded, false);
 <body>
 
 <!-- button id="btn" onclick="alert('Hello World')">Click Me</button -->
-<canvas id="test" width="700" height="400" style="border:1px solid black"></canvas>
+<canvas id="test" width="2000" height="400" style="border:1px solid black"></canvas>
 
 </body>
 </html>
