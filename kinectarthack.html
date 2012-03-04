@@ -1,44 +1,39 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<title>three.js - kinect</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style>
-			body {
-				font-family: Monospace;
-				background-color: #000000;
-				margin: 0px;
-				overflow: hidden;
-			}
-		</style>
-	</head>
-	<body>
-	    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js"></script>
-
-
-		<script src="js/Detector.js"></script>
-		<script src="js/RequestAnimationFrame.js"></script>
-		<script src="js/Stats.js"></script>
-		<script src="js/Three.js"></script>
-        <script src="js/base64_utils.js"></script>
-		
-		<div id="pluginContainer">
-			<object id="ZigPlugin" type="application/x-zig" width="0" height="0">
-				<param name="onload" value="pluginLoaded" />
-			</object>
-		</div> 
-        
-		<audio id="audio-element"
-           src="song.ogg"
-           controls="true"
-           style="width: 512px;">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>three.js - kinect</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body
+        {
+            font-family: Monospace;
+            background-color: #000000;
+            margin: 0px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js"></script>
+    <script src="js/Detector.js"></script>
+    <script src="js/RequestAnimationFrame.js"></script>
+    <script src="js/Stats.js"></script>
+    <script src="js/Three.js"></script>
+    <script src="js/base64_utils.js"></script>
+    <div id="pluginContainer">
+        <object id="ZigPlugin" type="application/x-zig" width="0" height="0">
+            <param name="onload" value="pluginLoaded" />
+        </object>
+    </div>
+    <audio id="audio-element" src="song.ogg" controls="true" style="width: 512px;">
 		</audio>
-		<div style='background-color: white'><canvas id="fft" width="512" height="200"></canvas></div>
-		
-		<script id="vs" type="x-shader/x-vertex">
+    <div style='background-color: white'>
+        <canvas id="fft" width="512" height="200"></canvas>
+    </div>
+    <script id="vs" type="x-shader/x-vertex">
 
 //
 // Description : Array and textureless GLSL 2D simplex noise function.
@@ -147,8 +142,7 @@ float snoise(vec2 v)
 			}
 
 		</script>
-
-		<script id="fs" type="x-shader/x-fragment">
+    <script id="fs" type="x-shader/x-fragment">
 
 			uniform sampler2D map;
 
@@ -165,335 +159,333 @@ float snoise(vec2 v)
 			}
 
 		</script>
-
-		<script>
-	
-
-			var container;
-
-			var scene, camera, light, renderer;
-			var geometry, cube, mesh, material;
-			var mouse, center;
-			var stats;
-			var mouseLock = false;
-
-			var video, texture;
-
-			if ( Detector.webgl ) {
-
-				init();
-				animate();
-
-			} else {
-
-				document.body.appendChild( Detector.getWebGLErrorMessage() );
-
-			}
-
-			function init() {
-
-				stats = new Stats();
-				stats.domElement.style.position = 'absolute';
-				stats.domElement.style.top = '0px';
-				stats.domElement.style.right = '0px';
-				container = document.createElement("div");
-				document.body.appendChild(container);
-				container.appendChild( stats.domElement );
-
-				scene = new THREE.Scene();
-				center = new THREE.Vector3();
-				center.z = - 1000;
-
-				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
-				camera.position.set( 0, 0, 500 );
-				scene.add( camera );
-
-				canvas = document.createElement('canvas');  
-				texture = new THREE.Texture( canvas );
-				texture.minFilter = THREE.NearestFilter;
-				texture.magFilter = THREE.NearestFilter;
-
-				var width = 160, height = 120;
-				//var nearClipping = 850/*850*/, farClipping = 4000/*4000*/;
-				var nearClipping = 0/*850*/, farClipping = 10000/*4000*/;
-
-				geometry = new THREE.Geometry();
-
-				for ( var i = 0, l = width * height; i < l; i ++ ) {
-
-					var position = new THREE.Vector3();
-					position.x = ( i % width );
-					position.y = Math.floor( i / width );
-
-					geometry.vertices.push( new THREE.Vertex( position ) );
-
-				}
-				// whee, js global variables. modify "value" to change particle size
-				particleSize = {type:'f', value: 8.0}
-				bass = {type:'f', value: 0};
-
-				material = new THREE.ShaderMaterial( {
-
-					//attributes : particleAttributes,
-					uniforms: {
-						"bass" : bass,
-						"size" : particleSize,
-						"map": { type: "t", value: 0, texture: texture },
-						"width": { type: "f", value: width },
-						"height": { type: "f", value: height },
-						"nearClipping": { type: "f", value: nearClipping },
-						"farClipping": { type: "f", value: farClipping }
-
-					},
-					vertexShader: document.getElementById( 'vs' ).textContent,
-					fragmentShader: document.getElementById( 'fs' ).textContent,
-					depthWrite: false
-
-				} );
-
-				mesh = new THREE.ParticleSystem( geometry, material );
-				mesh.position.x = 0;
-				mesh.position.y = 0;
-				scene.add( mesh );
-				
+    <script>
 
 
-				renderer = new THREE.WebGLRenderer();
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
+        var container;
 
-				mouse = new THREE.Vector3( 0, 0, 1 );
-				projector = new THREE.Projector();
-				ray = new THREE.Ray( camera.position );
+        var scene, camera, light, renderer;
+        var geometry, cube, mesh, material;
+        var mouse, center;
+        var stats;
+        var mouseLock = false;
 
-				document.addEventListener('mousemove', onDocumentMouseMove, false);
+        var video, texture;
 
-				document.onkeypress = onDocumentKeyPress;
+        if (Detector.webgl) {
 
-			}
+            init();
+            animate();
 
-			function onDocumentMouseMove( event ) {
+        } else {
 
-			    if (!mouseLock) {
-			        mouse.x = (event.clientX - window.innerWidth / 2) * 8;
-			        mouse.y = (event.clientY - window.innerHeight / 2) * 8;
-			    }
-			}
+            document.body.appendChild(Detector.getWebGLErrorMessage());
 
-			function onDocumentKeyPress(event) {
-
-			    var char = String.fromCharCode(event.keyCode || event.charCode);
-			    if (char == 'l') {
-			        mouseLock = !mouseLock;
-			    }
-			}
-
-
-			function animate() {
-
-				requestAnimationFrame( animate );
-				//time.value += 0.01;
-				render();
-				stats.update();
-
-			}
-
-			function render() {
-
-				camera.position.x += ( mouse.x - camera.position.x ) * 0.05;
-				camera.position.y += ( - mouse.y - camera.position.y ) * 0.05;
-				camera.lookAt( center );
-
-				renderer.render( scene, camera );
-
-			}
-
-// My code
-
-        function pluginLoaded() {
-			
-			var plugin = document.getElementById("ZigPlugin");
-		    try {
-	           plugin.requestStreams(true, false, false);
-	        } catch(e) {
-	            console.log('new style plugin');
-	            plugin.requestStreams({updateDepth: true, updateImage: false, updateLabelMap : true});
-	        }
-			plugin.addEventListener("NewFrame", function() { 
-				drawDM(plugin, canvas);
-				texture.needsUpdate = true;
-			}, false);
         }
 
-	    function drawDM(plugin, canvas) {
-			var dm = plugin.depthMap;
-			var lm = plugin.labelMap;
-			if (dm.length == 0) return;
-			var ctx = canvas.getContext('2d');
-			var pix = ctx.createImageData(160,120);
-			var data = pix.data;
-			var srcData = Base64.decode(dm);
-			var labelData = Base64.decode(lm);
-			for(var i = 0; i < 160*120; i++) {
-				var isUser = (labelData[i*2] != 0 || labelData[i*2+1] != 0);
-				data[i*4] = (isUser)? srcData[i*2] : 0;
-				data[i*4 + 1] = (isUser)? srcData[i*2 + 1] : 0;
-				data[i*4 + 2] = 255;
-				data[i*4 + 3] = 255;
-			}
-			ctx.putImageData(pix, 0, 0);
-		}
+        function init() {
 
-		$(document).ready(function(){
-		  var canvas = document.getElementById('fft'),
+            stats = new Stats();
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.top = '0px';
+            stats.domElement.style.right = '0px';
+            container = document.createElement("div");
+            document.body.appendChild(container);
+            container.appendChild(stats.domElement);
+
+            scene = new THREE.Scene();
+            center = new THREE.Vector3();
+            center.z = -1000;
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.set(0, 0, 500);
+            scene.add(camera);
+
+            canvas = document.createElement('canvas');
+            texture = new THREE.Texture(canvas);
+            texture.minFilter = THREE.NearestFilter;
+            texture.magFilter = THREE.NearestFilter;
+
+            var width = 160, height = 120;
+            //var nearClipping = 850/*850*/, farClipping = 4000/*4000*/;
+            var nearClipping = 0/*850*/, farClipping = 10000/*4000*/;
+
+            geometry = new THREE.Geometry();
+
+            for (var i = 0, l = width * height; i < l; i++) {
+
+                var position = new THREE.Vector3();
+                position.x = (i % width);
+                position.y = Math.floor(i / width);
+
+                geometry.vertices.push(new THREE.Vertex(position));
+
+            }
+            // whee, js global variables. modify "value" to change particle size
+            particleSize = { type: 'f', value: 8.0 }
+            bass = { type: 'f', value: 0 };
+
+            material = new THREE.ShaderMaterial({
+
+                //attributes : particleAttributes,
+                uniforms: {
+                    "bass": bass,
+                    "size": particleSize,
+                    "map": { type: "t", value: 0, texture: texture },
+                    "width": { type: "f", value: width },
+                    "height": { type: "f", value: height },
+                    "nearClipping": { type: "f", value: nearClipping },
+                    "farClipping": { type: "f", value: farClipping }
+
+                },
+                vertexShader: document.getElementById('vs').textContent,
+                fragmentShader: document.getElementById('fs').textContent,
+                depthWrite: false
+
+            });
+
+            mesh = new THREE.ParticleSystem(geometry, material);
+            mesh.position.x = 0;
+            mesh.position.y = 0;
+            scene.add(mesh);
+
+
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            mouse = new THREE.Vector3(0, 0, 1);
+            projector = new THREE.Projector();
+            ray = new THREE.Ray(camera.position);
+
+            document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+            document.onkeypress = onDocumentKeyPress;
+
+        }
+
+        function onDocumentMouseMove(event) {
+
+            if (!mouseLock) {
+                mouse.x = (event.clientX - window.innerWidth / 2) * 8;
+                mouse.y = (event.clientY - window.innerHeight / 2) * 8;
+            }
+        }
+
+        function onDocumentKeyPress(event) {
+
+            var char = String.fromCharCode(event.keyCode || event.charCode);
+            if (char == 'l') {
+                mouseLock = !mouseLock;
+            }
+        }
+
+
+        function animate() {
+
+            requestAnimationFrame(animate);
+            //time.value += 0.01;
+            render();
+            stats.update();
+
+        }
+
+        function render() {
+
+            camera.position.x += (mouse.x - camera.position.x) * 0.05;
+            camera.position.y += (-mouse.y - camera.position.y) * 0.05;
+            camera.lookAt(center);
+
+            renderer.render(scene, camera);
+
+        }
+
+        // My code
+
+        function pluginLoaded() {
+
+            var plugin = document.getElementById("ZigPlugin");
+            try {
+                plugin.requestStreams(true, false, false);
+            } catch (e) {
+                console.log('new style plugin');
+                plugin.requestStreams({ updateDepth: true, updateImage: false, updateLabelMap: true });
+            }
+            plugin.addEventListener("NewFrame", function () {
+                drawDM(plugin, canvas);
+                texture.needsUpdate = true;
+            }, false);
+        }
+
+        function drawDM(plugin, canvas) {
+            var dm = plugin.depthMap;
+            var lm = plugin.labelMap;
+            if (dm.length == 0) return;
+            var ctx = canvas.getContext('2d');
+            var pix = ctx.createImageData(160, 120);
+            var data = pix.data;
+            var srcData = Base64.decode(dm);
+            var labelData = Base64.decode(lm);
+            for (var i = 0; i < 160 * 120; i++) {
+                var isUser = (labelData[i * 2] != 0 || labelData[i * 2 + 1] != 0);
+                data[i * 4] = (isUser) ? srcData[i * 2] : 0;
+                data[i * 4 + 1] = (isUser) ? srcData[i * 2 + 1] : 0;
+                data[i * 4 + 2] = 255;
+                data[i * 4 + 3] = 255;
+            }
+            ctx.putImageData(pix, 0, 0);
+        }
+
+        $(document).ready(function () {
+            var canvas = document.getElementById('fft'),
 			  ctx = canvas.getContext('2d'),
 			  channels,
 			  rate,
 			  frameBufferLength,
 			  fft;
 
-		  function loadedMetadata() {
-			channels          = audio.mozChannels;
-			rate              = audio.mozSampleRate;
-			frameBufferLength = audio.mozFrameBufferLength;
-			 
-			fft = new FFT(frameBufferLength / channels, rate);
-		  }
+            function loadedMetadata() {
+                channels = audio.mozChannels;
+                rate = audio.mozSampleRate;
+                frameBufferLength = audio.mozFrameBufferLength;
 
-		  function audioAvailable(event) {
-			var fb = event.frameBuffer,
-				t  = event.time, /* unused, but it's there */
+                fft = new FFT(frameBufferLength / channels, rate);
+            }
+
+            function audioAvailable(event) {
+                var fb = event.frameBuffer,
+				t = event.time, /* unused, but it's there */
 				signal = new Float32Array(fb.length / channels),
 				magnitude;
 
-			for (var i = 0, fbl = frameBufferLength / 2; i < fbl; i++ ) {
-			  // Assuming interlaced stereo channels,
-			  // need to split and merge into a stero-mix mono signal
-			  signal[i] = (fb[2*i] + fb[2*i+1]) / 2;
-			}
+                for (var i = 0, fbl = frameBufferLength / 2; i < fbl; i++) {
+                    // Assuming interlaced stereo channels,
+                    // need to split and merge into a stero-mix mono signal
+                    signal[i] = (fb[2 * i] + fb[2 * i + 1]) / 2;
+                }
 
-			fft.forward(signal);
+                fft.forward(signal);
 
-			// Clear the canvas before drawing spectrum
-			ctx.clearRect(0,0, canvas.width, canvas.height);
+                // Clear the canvas before drawing spectrum
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			var n = 32;
-			var levels = [];
-			for (var i=0;i<n;i++)
-				levels[i] = 0;
-			for (var i = 0; i < fft.spectrum.length; i++ ) {
-			  // multiply spectrum by a zoom value
-			  //magnitude = fft.spectrum[i] * 4000;
-			  
-			  levels[((i/fft.spectrum.length)*n)>>0] += fft.spectrum[i];
-			}
-			for (var i = 0; i < n; i++){
-			  // Draw rectangle bars for each frequency bin
-			  ctx.fillRect(i * 4, canvas.height, 3, -levels[i]*4000);
-			}
-			
-			bass.value = levels[0];
-		  }
+                var n = 32;
+                var levels = [];
+                for (var i = 0; i < n; i++)
+                    levels[i] = 0;
+                for (var i = 0; i < fft.spectrum.length; i++) {
+                    // multiply spectrum by a zoom value
+                    //magnitude = fft.spectrum[i] * 4000;
 
-		  var audio = document.getElementById('audio-element');
-		  audio.addEventListener('MozAudioAvailable', audioAvailable, false);
-		  audio.addEventListener('loadedmetadata', loadedMetadata, false);
+                    levels[((i / fft.spectrum.length) * n) >> 0] += fft.spectrum[i];
+                }
+                for (var i = 0; i < n; i++) {
+                    // Draw rectangle bars for each frequency bin
+                    ctx.fillRect(i * 4, canvas.height, 3, -levels[i] * 4000);
+                }
 
-		  // FFT from dsp.js, see below
-		  var FFT = function(bufferSize, sampleRate) {
-			this.bufferSize   = bufferSize;
-			this.sampleRate   = sampleRate;
-			this.spectrum     = new Float32Array(bufferSize/2);
-			this.real         = new Float32Array(bufferSize);
-			this.imag         = new Float32Array(bufferSize);
-			this.reverseTable = new Uint32Array(bufferSize);
-			this.sinTable     = new Float32Array(bufferSize);
-			this.cosTable     = new Float32Array(bufferSize);
+                bass.value = levels[0];
+            }
 
-			var limit = 1,
+            var audio = document.getElementById('audio-element');
+            audio.addEventListener('MozAudioAvailable', audioAvailable, false);
+            audio.addEventListener('loadedmetadata', loadedMetadata, false);
+
+            // FFT from dsp.js, see below
+            var FFT = function (bufferSize, sampleRate) {
+                this.bufferSize = bufferSize;
+                this.sampleRate = sampleRate;
+                this.spectrum = new Float32Array(bufferSize / 2);
+                this.real = new Float32Array(bufferSize);
+                this.imag = new Float32Array(bufferSize);
+                this.reverseTable = new Uint32Array(bufferSize);
+                this.sinTable = new Float32Array(bufferSize);
+                this.cosTable = new Float32Array(bufferSize);
+
+                var limit = 1,
 				bit = bufferSize >> 1;
 
-			while ( limit < bufferSize ) {
-			  for ( var i = 0; i < limit; i++ ) {
-				this.reverseTable[i + limit] = this.reverseTable[i] + bit;
-			  }
+                while (limit < bufferSize) {
+                    for (var i = 0; i < limit; i++) {
+                        this.reverseTable[i + limit] = this.reverseTable[i] + bit;
+                    }
 
-			  limit = limit << 1;
-			  bit = bit >> 1;
-			}
+                    limit = limit << 1;
+                    bit = bit >> 1;
+                }
 
-			for ( var i = 0; i < bufferSize; i++ ) {
-			  this.sinTable[i] = Math.sin(-Math.PI/i);
-			  this.cosTable[i] = Math.cos(-Math.PI/i);
-			}
-		  };
+                for (var i = 0; i < bufferSize; i++) {
+                    this.sinTable[i] = Math.sin(-Math.PI / i);
+                    this.cosTable[i] = Math.cos(-Math.PI / i);
+                }
+            };
 
-		  FFT.prototype.forward = function(buffer) {
-			var bufferSize   = this.bufferSize,
-				cosTable     = this.cosTable,
-				sinTable     = this.sinTable,
+            FFT.prototype.forward = function (buffer) {
+                var bufferSize = this.bufferSize,
+				cosTable = this.cosTable,
+				sinTable = this.sinTable,
 				reverseTable = this.reverseTable,
-				real         = this.real,
-				imag         = this.imag,
-				spectrum     = this.spectrum;
+				real = this.real,
+				imag = this.imag,
+				spectrum = this.spectrum;
 
-			if ( bufferSize !== buffer.length ) {
-			  throw "Supplied buffer is not the same size as defined FFT. FFT Size: " + bufferSize + " Buffer Size: " + buffer.length;
-			}
+                if (bufferSize !== buffer.length) {
+                    throw "Supplied buffer is not the same size as defined FFT. FFT Size: " + bufferSize + " Buffer Size: " + buffer.length;
+                }
 
-			for ( var i = 0; i < bufferSize; i++ ) {
-			  real[i] = buffer[reverseTable[i]];
-			  imag[i] = 0;
-			}
+                for (var i = 0; i < bufferSize; i++) {
+                    real[i] = buffer[reverseTable[i]];
+                    imag[i] = 0;
+                }
 
-			var halfSize = 1,
-				phaseShiftStepReal,	
+                var halfSize = 1,
+				phaseShiftStepReal,
 				phaseShiftStepImag,
 				currentPhaseShiftReal,
 				currentPhaseShiftImag,
 				off,
 				tr,
 				ti,
-				tmpReal,	
+				tmpReal,
 				i;
 
-			while ( halfSize < bufferSize ) {
-			  phaseShiftStepReal = cosTable[halfSize];
-			  phaseShiftStepImag = sinTable[halfSize];
-			  currentPhaseShiftReal = 1.0;
-			  currentPhaseShiftImag = 0.0;
+                while (halfSize < bufferSize) {
+                    phaseShiftStepReal = cosTable[halfSize];
+                    phaseShiftStepImag = sinTable[halfSize];
+                    currentPhaseShiftReal = 1.0;
+                    currentPhaseShiftImag = 0.0;
 
-			  for ( var fftStep = 0; fftStep < halfSize; fftStep++ ) {
-				i = fftStep;
+                    for (var fftStep = 0; fftStep < halfSize; fftStep++) {
+                        i = fftStep;
 
-				while ( i < bufferSize ) {
-				  off = i + halfSize;
-				  tr = (currentPhaseShiftReal * real[off]) - (currentPhaseShiftImag * imag[off]);
-				  ti = (currentPhaseShiftReal * imag[off]) + (currentPhaseShiftImag * real[off]);
+                        while (i < bufferSize) {
+                            off = i + halfSize;
+                            tr = (currentPhaseShiftReal * real[off]) - (currentPhaseShiftImag * imag[off]);
+                            ti = (currentPhaseShiftReal * imag[off]) + (currentPhaseShiftImag * real[off]);
 
-				  real[off] = real[i] - tr;
-				  imag[off] = imag[i] - ti;
-				  real[i] += tr;
-				  imag[i] += ti;
+                            real[off] = real[i] - tr;
+                            imag[off] = imag[i] - ti;
+                            real[i] += tr;
+                            imag[i] += ti;
 
-				  i += halfSize << 1;
-				}
+                            i += halfSize << 1;
+                        }
 
-				tmpReal = currentPhaseShiftReal;
-				currentPhaseShiftReal = (tmpReal * phaseShiftStepReal) - (currentPhaseShiftImag * phaseShiftStepImag);
-				currentPhaseShiftImag = (tmpReal * phaseShiftStepImag) + (currentPhaseShiftImag * phaseShiftStepReal);
-			  }
+                        tmpReal = currentPhaseShiftReal;
+                        currentPhaseShiftReal = (tmpReal * phaseShiftStepReal) - (currentPhaseShiftImag * phaseShiftStepImag);
+                        currentPhaseShiftImag = (tmpReal * phaseShiftStepImag) + (currentPhaseShiftImag * phaseShiftStepReal);
+                    }
 
-			  halfSize = halfSize << 1;
-		}
+                    halfSize = halfSize << 1;
+                }
 
-			i = bufferSize/2;
-			while(i--) {
-			  spectrum[i] = 2 * Math.sqrt(real[i] * real[i] + imag[i] * imag[i]) / bufferSize;
-		}
-		  };
-		})();
+                i = bufferSize / 2;
+                while (i--) {
+                    spectrum[i] = 2 * Math.sqrt(real[i] * real[i] + imag[i] * imag[i]) / bufferSize;
+                }
+            };
+        })();
 		</script>
-				
-	</body>
+</body>
 </html>
