@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -208,6 +208,7 @@ float snoise(vec2 v)
 			var geometry, cube, mesh, material;
 			var mouse, center;
 			var stats;
+			var mouseLock = false;
 
 			var video, texture;
 
@@ -297,16 +298,28 @@ float snoise(vec2 v)
 				projector = new THREE.Projector();
 				ray = new THREE.Ray( camera.position );
 
-				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+				document.onkeypress = onDocumentKeyPress;
 
 			}
 
 			function onDocumentMouseMove( event ) {
 
-				mouse.x = ( event.clientX - window.innerWidth / 2 ) * 8;
-				mouse.y = ( event.clientY - window.innerHeight / 2 ) * 8;
-
+			    if (!mouseLock) {
+			        mouse.x = (event.clientX - window.innerWidth / 2) * 8;
+			        mouse.y = (event.clientY - window.innerHeight / 2) * 8;
+			    }
 			}
+
+			function onDocumentKeyPress(event) {
+
+			    var char = String.fromCharCode(event.keyCode || event.charCode);
+			    if (char == 'l') {
+			        mouseLock = !mouseLock;
+			    }
+			}
+
 
 			function animate() {
 
