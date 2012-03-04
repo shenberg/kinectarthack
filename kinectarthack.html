@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -30,7 +30,7 @@
     </div>
     <audio id="audio-element" src="song.ogg" controls="true" style="width: 512px;">
 		</audio>
-    <div style='background-color: white'>
+    <div style='background-color: white; position:fixed; left:200px; bottom:0; width:100%;'>
         <canvas id="fft" width="512" height="200"></canvas>
     </div>
     <script id="vs" type="x-shader/x-vertex">
@@ -196,9 +196,11 @@ float snoise(vec2 v)
             scene = new THREE.Scene();
             center = new THREE.Vector3();
             center.z = -1000;
+	center.x = -window.innerWidth / 2;
+
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
-            camera.position.set(0, 0, 500);
+            camera.position.set(window.innerWidth / 2, window.innerHeight / 2, 500);
             scene.add(camera);
 
             canvas = document.createElement('canvas');
@@ -268,8 +270,9 @@ float snoise(vec2 v)
         function onDocumentMouseMove(event) {
 
             if (!mouseLock) {
-                mouse.x = (event.clientX - window.innerWidth / 2) * 8;
-                mouse.y = (event.clientY - window.innerHeight / 2) * 8;
+                mouse.x = (event.clientX - window.innerWidth / 2) * 1 ;
+                mouse.y = (event.clientY - window.innerHeight / 2) * 1;
+//console.log("mouse.x: " + mouse.x + ",  mouse.y: " + mouse.y);
             }
         }
 
@@ -292,9 +295,10 @@ float snoise(vec2 v)
         }
 
         function render() {
-
-            camera.position.x += (mouse.x - camera.position.x) * 0.05;
-            camera.position.y += (-mouse.y - camera.position.y) * 0.05;
+	camera.position.x = 0;
+camera.position.y = 0;
+//            camera.position.x += (mouse.x - camera.position.x) * 0.05;
+//            camera.position.y += (-mouse.y - camera.position.y) * 0.05;
             camera.lookAt(center);
 
             renderer.render(scene, camera);
@@ -485,7 +489,14 @@ float snoise(vec2 v)
                     spectrum[i] = 2 * Math.sqrt(real[i] * real[i] + imag[i] * imag[i]) / bufferSize;
                 }
             };
-        })();
+
+
+        });
+
+
+
+
 		</script>
+
 </body>
 </html>
