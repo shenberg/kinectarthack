@@ -118,9 +118,10 @@ float snoise(vec2 v)
 
 			varying vec2 vUv;
 
-			const float XtoZ = 1.11146; // tan( 1.0144686 / 2.0 ) * 2.0;
-			const float YtoZ = 0.83359; // tan( 0.7898090 / 2.0 ) * 2.0;
-
+			//const float XtoZ = 1.11146; // tan( 1.0144686 / 2.0 ) * 2.0;
+			//const float YtoZ = 0.83359; // tan( 0.7898090 / 2.0 ) * 2.0;
+            uniform float XtoZ;
+            uniform float YtoZ;
 			void main() {
 
 				vUv = vec2( position.x / width, 1.0 - ( position.y / height ) );
@@ -175,8 +176,8 @@ float snoise(vec2 v)
 
         if (Detector.webgl) {
 
-            init();
-            animate();
+            //init();
+            //animate();2
 
         } else {
 
@@ -186,6 +187,12 @@ float snoise(vec2 v)
 
         function init() {
 
+            //RW/image conversion
+            var plugin = document.getElementById("ZigPlugin");
+            var rw = plugin.convertImageToWorldSpace([81, 61, 1000]);
+            var XtoZ = 160*rw[0] / 1000;
+            var YtoZ = -120*rw[1] / 1000;
+            console.log(XtoZ);console.log(YtoZ);
             stats = new Stats();
             stats.domElement.style.position = 'absolute';
             stats.domElement.style.top = '0px';
@@ -234,6 +241,8 @@ float snoise(vec2 v)
                 uniforms: {
                     "bass": bass,
                     "size": particleSize,
+                    "XtoZ": { type: 'f', value: XtoZ },
+                    "YtoZ": { type: 'f', value: YtoZ },
                     "map": { type: "t", value: 0, texture: texture },
                     "width": { type: "f", value: width },
                     "height": { type: "f", value: height },
@@ -299,10 +308,11 @@ float snoise(vec2 v)
         }
 
         function render() {
-	camera.position.x = 0;
-camera.position.y = 0;
-//            camera.position.x += (mouse.x - camera.position.x) * 0.05;
-//            camera.position.y += (-mouse.y - camera.position.y) * 0.05;
+        //TODO:disable mouse
+	//camera.position.x = 0;
+//camera.position.y = 0;
+            camera.position.x += (mouse.x - camera.position.x) * 0.05;
+            camera.position.y += (-mouse.y - camera.position.y) * 0.05;
             camera.lookAt(center);
 
             renderer.render(scene, camera);
@@ -312,7 +322,9 @@ camera.position.y = 0;
         // My code
 
         function pluginLoaded() {
-
+            if (!Detector.webgl) return;
+            init();
+            animate();
             var plugin = document.getElementById("ZigPlugin");
             try {
                 plugin.requestStreams(true, false, false);
@@ -542,9 +554,60 @@ camera.position.y = 0;
                 //ce.style.display = 'none';
                 console.log("sessionend");
             });
+
+           
+            var engager = zig.EngageUsersWithSkeleton(1);
+            engager.addEventListener('userengaged', function (user) {
+                console.log('User engaged: ' + user.id);
+
+                user.addEventListener('userupdate', function (user) {
+                    console.log('Right Hand position: ' + user.skeleton[zig.Joint.RightHand].position);
+
+                    var handPosition = user.skeleton[zig.Joint.RightHand].position;
+
+                    var cube = new THREE.Mesh(
+                     new THREE.CubeGeometry(10, 10, 10),
+                    new THREE.MeshLambertMaterial({ color: 0xFFFF00 })
+                );
+
+
+                /*
+			const float XtoZ = 1.11146; // tan( 1.0144686 / 2.0 ) * 2.0;
+			const float YtoZ = 0.83359; // tan( 0.7898090 / 2.0 ) * 2.0;
+
+
+				vUv = vec2( position.x / width, 1.0 - ( position.y / height ) );
+				float noiseFactor = snoise(vec2(vUv.y,bass));
+
+				vec4 color = texture2D( map, vUv );
+				// maxdepth is 10000, encoding LSB in R and MSB in G
+				float z = ( color.r + (color.g * 256.0) ) * 256.0;
+
+				
+				vec4 pos = vec4(
+					( position.x / width - 0.5 ) * z * XtoZ,
+					( position.y / height - 0.5 ) * z * YtoZ,
+					- z + 1000.0 + noiseFactor*64.0,
+					1.0);
+
+				gl_PointSize = 2.0 + size*(noiseFactor + 0.5); // 2.0;
+				gl_Position = projectionMatrix * modelViewMatrix * pos;
+                */
+                    cube.position.set(handPosition[0], handPosition[1], 1000.0-handPosition[2]);
+
+                    scene.add(cube);
+
+                });
+            });
+            engager.addEventListener('userdisengaged', function (user) {
+                console.log('User disengaged: ' + user.id);
+            });
+            zig.addListener(engager);
+
             
             // 2. move the cursor element on cursor move
             c.addEventListener('move', function (cursor) {
+                return;
                 //ce.style.left = (c.x * window.innerWidth - (ce.offsetWidth / 2)) + "px";
                 //ce.style.top = (c.y * window.innerHeight - (ce.offsetHeight / 2)) + "px";
 
@@ -556,8 +619,8 @@ camera.position.y = 0;
                     new THREE.MeshLambertMaterial({ color: 0xFFFF00 })
                 );
 
-                //const float XtoZ = 1.11146; // tan( 1.0144686 / 2.0 ) * 2.0;
-			//const float YtoZ = 0.83359; // tan( 0.7898090 / 2.0 ) * 2.0;
+                    //const float XtoZ = 1.11146; // tan( 1.0144686 / 2.0 ) * 2.0;
+                    //const float YtoZ = 0.83359; // tan( 0.7898090 / 2.0 ) * 2.0;
 
                     cube.position.set(c.x * 160, (1 - c.y) * 120, 10);
 
