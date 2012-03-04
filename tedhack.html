@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>three.js - kinect</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+	    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js"></script>
+
+
+		<script src="Detector.js"></script>
+		<script src="RequestAnimationFrame.js"></script>
+		<script src="Stats.js"></script>
+		<script src="Three.js"></script>
+
+		<script id="vs" type="x-shader/x-vertex">
+
+			uniform sampler2D map;
+
+			uniform float size;
+
+			uniform float width;
+			uniform float height;
+			uniform float nearClipping, farClipping;
+
+			varying vec2 vUv;
+
+			const float XtoZ = 1.11146; // tan( 1.0144686 / 2.0 ) * 2.0;
+			const float YtoZ = 0.83359; // tan( 0.7898090 / 2.0 ) * 2.0;
+
+			void main() {
+
+				vUv = vec2( position.x / width, 1.0 - ( position.y / height ) );
+
+				vec4 color = texture2D( map, vUv );
+				
+				//float depth = ( color.r + color.g + color.b ) / 3.0;
+				
+				// Projection code by @kcmic
+
+				//float z = ( 1.0 - depth ) * (farClipping - nearClipping) + nearClipping;
+
+				// maxdepth is 10000, encoding LSB in R and MSB in G
+				float z = ( color.r + (color.g * 256.0) ) * 256.0;
+
+				
+				vec4 pos = vec4(
+					( position.x / width - 0.5 ) * z * XtoZ,
+					( position.y / height - 0.5 ) * z * YtoZ,
+					- z + 1000.0,
+					1.0);
+
+				gl_PointSize = size; // 2.0;
+				gl_Position = projectionMatrix * modelViewMatrix * pos;
+
+			}
+
+		</script>
+
+		<script id="fs" type="x-shader/x-fragment">
+
+			uniform sampler2D map;
+
+			varying vec2 vUv;
+			uniform float brightness;
+
+			void main() {
+
+				vec4 color = texture2D( map, vUv );
+				/*
+				vec4 color = vec4(
+					oldcolor.r*brightness,
+					oldcolor.g*brightness,
+					oldcolor.b*brightness,
+					oldcolor.a
+				);
+				*/
+
+				//gl_FragColor = vec4( abs(color.r - 0.5) * 2.0, (color.g * 6.0), 1.0 - (abs(color.r - 0.5) * 2.0) , smoothstep( 8000.0, -8000.0, gl_FragCoord.z / gl_FragCoord.w ) );
+				gl_FragColor = vec4( abs(color.r - 0.5) * 2.0, ceil(color.b), 1.0 - (abs(color.r - 0.5) * 2.0) , smoothstep( 8000.0, -8000.0, gl_FragCoord.z / gl_FragCoord.w ) );
+				//gl_FragColor = color;
+			}
+
+		</script>
+
+		<script>
+			var brightness = 0;
+			var sliders = [255,255];
+		
+			var codexStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+			var codexInt = [];
+			for(var i = 0; i < 256; i++) {
+				var idx = codexStr.indexOf(String.fromCharCode(i));
+				codexInt[i] = idx;
+			}
+			var Base64 =
+			{
+			    // assuming that the input string encodes a number of bytes divisible by 3
+			    decode : function (input)
+			    {
+			        var output = new Array(input.length*3/4);
+			        var inLength = input.length;
+			        var outIndex = 0;
+			        for (var i = 0; i < inLength; i += 4) {
+			            var enc1 = codexInt[input.charCodeAt(i)];
+			            var enc2 = codexInt[input.charCodeAt(i+1)];
+			            var enc3 = codexInt[input.charCodeAt(i+2)];
+			            var enc4 = codexInt[input.charCodeAt(i+3)];
+
+			            var chr1 = (enc1 << 2) | (enc2 >> 4);
+			            var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+			            var chr3 = ((enc3 & 3) << 6) | enc4;
+			            
+
+			            output[outIndex] = chr1;
+			            output[outIndex+1] = chr2;
+			            output[outIndex+2] = chr3;
+			            outIndex += 3;
+			        }
+
+			        return output;
+			    }
+			}
+
+			var container;
+
+			var scene, camera, light, renderer;
+			var geometry, cube, mesh, material;
+			var mouse, center;
+			var stats;
+
+			var video, texture;
+
+			if ( Detector.webgl ) {
+
+				init();
+				animate();
+
+			} else {
+
+				document.body.appendChild( Detector.getWebGLErrorMessage() );
+
+			}
+
+			function init() {
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container = document.createElement("div");
+				document.body.appendChild(container);
+				container.appendChild( stats.domElement );
+
+				scene = new THREE.Scene();
+				center = new THREE.Vector3();
+				center.z = - 1000;
+
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.set( 0, 0, 500 );
+				scene.add( camera );
+
+				canvas = document.createElement('canvas');  
+				texture = new THREE.Texture( canvas );
+				texture.minFilter = THREE.NearestFilter;
+				texture.magFilter = THREE.NearestFilter;
+
+				var width = 160, height = 120;
+				//var nearClipping = 850/*850*/, farClipping = 4000/*4000*/;
+				var nearClipping = 0/*850*/, farClipping = 10000/*4000*/;
+
+				geometry = new THREE.Geometry();
+
+				for ( var i = 0, l = width * height; i < l; i ++ ) {
+
+					var position = new THREE.Vector3();
+					position.x = ( i % width );
+					position.y = Math.floor( i / width );
+
+					geometry.vertices.push( new THREE.Vertex( position ) );
+
+				}
+				// whee, js global variables. modify "value" to change particle size
+				particleSize =       {type:'f', value: 10.0};
+				particleBrightness = {type:'f', value: brightness};
+
+				material = new THREE.ShaderMaterial( {
+
+					//attributes : particleAttributes,
+					uniforms: {
+						"size" : particleSize,
+						"map": { type: "t", value: 0, texture: texture },
+						"width": { type: "f", value: width },
+						"height": { type: "f", value: height },
+						"nearClipping": { type: "f", value: nearClipping },
+						"farClipping": { type: "f", value: farClipping },
+						"brightness" : particleBrightness
+					},
+					vertexShader: document.getElementById( 'vs' ).textContent,
+					fragmentShader: document.getElementById( 'fs' ).textContent,
+					depthWrite: false
+
+				} );
+
+				mesh = new THREE.ParticleSystem( geometry, material );
+				mesh.position.x = 0;
+				mesh.position.y = 0;
+				scene.add( mesh );
+				
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				mouse = new THREE.Vector3( 0, 0, 1 );
+				projector = new THREE.Projector();
+				ray = new THREE.Ray( camera.position );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				mouse.x = ( event.clientX - window.innerWidth / 2 ) * 8;
+				mouse.y = ( event.clientY - window.innerHeight / 2 ) * 8;
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render() {
+
+				//camera.position.x += ( mouse.x - camera.position.x ) * 0.05;
+				//camera.position.y += ( - mouse.y - camera.position.y ) * 0.05;
+				camera.lookAt( center );
+
+				renderer.render( scene, camera );
+
+			}
+
+// My code
+
+        function pluginLoaded() {
+			
+			var plugin = document.getElementById("ZigPlugin");
+		    try {
+	           plugin.requestStreams(true, false, true);
+	        } catch(e) {
+	            console.log('new style plugin');
+	            plugin.requestStreams({updateDepth: true, updateImage: false, updateLabelMap : true});
+	        }
+			plugin.addEventListener("NewFrame", function() { 
+				drawDM(plugin, canvas);
+				texture.needsUpdate = true;
+			}, false);
+        }
+
+
+	    function drawDM(plugin, canvas) {
+			var dm = plugin.depthMap;
+			var lm = plugin.labelMap;
+			if (dm.length == 0) return;
+			var ctx = canvas.getContext('2d');
+			var pix = ctx.createImageData(160,120);
+			var data = pix.data;
+			var srcData = Base64.decode(dm);
+			var labelData = Base64.decode(lm);
+			for(var i = 0; i < 160*120; i++) {
+				var isUser = (labelData[i*2] != 0);
+				data[i*4] = (isUser)? srcData[i*2] : 0;
+				data[i*4 + 1] = (isUser)? srcData[i*2 + 1] : 0;
+				data[i*4 + 2] = 255;//parseInt(slider);
+				data[i*4 + 3] = 255;//255;
+			}
+			ctx.putImageData(pix, 0, 0);
+		}
+
+
+		</script>
+		
+		<script>
+		function sliderchanged(slidernum,newValue)
+		{
+			document.getElementById("range"+slidernum).innerHTML=newValue;
+			sliders[slidernum] = parseInt(newValue);
+			particleBrightness.value = sliders[0];
+		}
+
+		</script>
+
+		<div id="pluginContainer">
+			<object id="ZigPlugin" type="application/x-zig" width="0" height="0">
+				<param name="onload" value="pluginLoaded" />
+			</object>
+		</div> 
+        <input style='color: white; position:fixed; bottom: 20px; right: 0px;'
+        	type="range" min="0" max="255" value="255" step="1" onchange="sliderchanged(0,this.value)" />
+		<span style='color: white; position: fixed; bottom: 0px; right: 0px;' id="range0">255</span>
+		<!--
+        <input style='color: white; position:fixed; bottom: 80px; right: 0px;'
+        	type="range" min="0" max="255" value="255" step="1" onchange="sliderchanged(1,this.value)" />
+		<span style='color: white; position: fixed; bottom: 50px; right: 0px;' id="range1">255</span>
+		-->
+		</div>
+	</body>
+</html>
