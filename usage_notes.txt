@@ -1,0 +1,13 @@
+
+commit 8592060dd80dc1b61e15cd8e362b0b29be23956e
+
+* close motion.com/graffiti, switch kinects, re-open
+-- no depth (XtoZ is nan)
+	    var plugin = document.getElementById("ZigPlugin");
+            var rw = plugin.convertImageToWorldSpace([81, 61, 1000]);
+            var XtoZ = 160*rw[0] / 1000;
+            var YtoZ = -120*rw[1] / 1000;
+            console.log(XtoZ);console.log(YtoZ);
+
+
+
