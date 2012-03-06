@@ -35,6 +35,8 @@
     <div style='background-color: white; position:fixed; left:200px; bottom:0; width:100%;'>
         <canvas id="fft" width="512" height="200" style="display:none;"></canvas>
     </div>
+
+
     <script id="vs" type="x-shader/x-vertex">
 
 //
@@ -172,7 +174,10 @@ float snoise(vec2 v)
         var geometry, cube, mesh, material;
         var mouse, center;
         var stats;
-        var mouseLock = true;
+
+        // keyboard configurable options
+        var mouseLock = true;                // toggle with 'l' key
+        var onlyRenderUserPointCloudPoints = true; // toggle with 'u' key
 
         var video, texture;
 
@@ -292,6 +297,8 @@ float snoise(vec2 v)
             var char = String.fromCharCode(event.keyCode || event.charCode);
             if (char == 'l') {
                 mouseLock = !mouseLock;
+            } else if (char == 'u') {
+                onlyRenderUserPointCloudPoints = !onlyRenderUserPointCloudPoints;
             }
         }
 
@@ -345,9 +352,15 @@ float snoise(vec2 v)
             var srcData = Base64.decode(dm);
             var labelData = Base64.decode(lm);
             for (var i = 0; i < 160 * 120; i++) {
+
                 var isUser = (labelData[i * 2] != 0 || labelData[i * 2 + 1] != 0);
-                data[i * 4] = (isUser) ? srcData[i * 2] : 0;
-                data[i * 4 + 1] = (isUser) ? srcData[i * 2 + 1] : 0;
+                var renderPointCloud = true;
+                if (!isUser && onlyRenderUserPointCloudPoints) {
+                    renderPointCloud = false;
+                }
+
+                data[i * 4] = (renderPointCloud) ? srcData[i * 2] : 0;
+                data[i * 4 + 1] = (renderPointCloud) ? srcData[i * 2 + 1] : 0;
                 data[i * 4 + 2] = 255;
                 data[i * 4 + 3] = 255;
             }
