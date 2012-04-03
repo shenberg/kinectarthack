@@ -30,8 +30,23 @@
             <param name="onload" value="pluginLoaded" />
         </object>
     </div>
-    <audio id="audio-element" src="DorsetPerception.ogg" controls="true" style="width: 512px;">
+    <div id="audio-controls" style=" width:250px; height:125px; background-color:#333333; color:white;-webkit-touch-callout: none;
+-webkit-user-select: none;
+-khtml-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+">
+  <h3 style="text-align:center;">** drag audio here **</h3>
+      <h1 id="play-pause-button" style="color:white; text-align:center; cursor: pointer;"> &#x2590;&#x2590;</h1>
+    
+      <p>'l'  Toggle mouse lock<br>
+      'u'  Show full point cloud</p>
+	
+    </div>
+    <audio id="audio-element"  src="DorsetPerception.ogg" style="width: 512px;">
 		</audio>
+    
      <!--		<audio id="audio-element" src="DorsetPerception.ogg"></audio>-->
     <div style='background-color: white; position:fixed; left:200px; bottom:0; width:100%;'>
         <canvas id="fft" width="512" height="200" style="display:none;"></canvas>
@@ -418,11 +433,26 @@ float snoise(vec2 v)
 	    var audio = document.getElementById('audio-element');
 	    audio.addEventListener('MozAudioAvailable', audioAvailable, false);
 	    audio.addEventListener('loadedmetadata', loadedMetadata, false);
+	    //audio.play(); // enables play on start
 
 	    // Allow user to play arbitrary audio file
-	    audio.addEventListener('dragover', handleDragOver, false);
-	    audio.addEventListener('drop', handleFileSelect, false);
-	    audio.play();
+	    var audioControl = document.getElementById('audio-controls');	    	    audioControl.addEventListener('dragover', handleDragOver, false);
+	    audioControl.addEventListener('drop', handleFileSelect, false);
+	    
+	    // setup playPause button
+	    var playPause = document.getElementById('play-pause-button');
+            playPause.innerHTML = "&#x25BA;"; 
+	    playPause.onclick = function() {
+		var audio = document.getElementById('audio-element');
+                if (audio.paused) {
+		    audio.play();
+	            this.innerHTML = "&#x2590;&#x2590";
+		} else {
+		    audio.pause();
+		    this.innerHTML = "&#x25BA;"
+		}
+	    }						       								       
+								       
 
 	    function handleDragOver(evt) {
 		evt.stopPropagation();
@@ -441,6 +471,8 @@ float snoise(vec2 v)
 		    // audio.currentTime = 0;
 		    
 		    audio.play();
+		    var playPause = document.getElementById('play-pause-button');
+                    playPause.innerHTML = "&#x2590;&#x2590";
 		}
 	    }
 	    function geturl(f) {
