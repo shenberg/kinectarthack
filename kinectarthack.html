@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -30,9 +30,9 @@
             <param name="onload" value="pluginLoaded" />
         </object>
     </div>
-    <!--<audio id="audio-element" src="DorsetPerception2.ogg" controls="true" style="width: 512px;">
-		</audio>-->
-		<audio id="audio-element" src="DorsetPerception.ogg"></audio>
+    <audio id="audio-element" src="DorsetPerception.ogg" controls="true" style="width: 512px;">
+		</audio>
+     <!--		<audio id="audio-element" src="DorsetPerception.ogg"></audio>-->
     <div style='background-color: white; position:fixed; left:200px; bottom:0; width:100%;'>
         <canvas id="fft" width="512" height="200" style="display:none;"></canvas>
     </div>
@@ -415,16 +415,53 @@ float snoise(vec2 v)
                 bass.value = levels[0];
             }
 
-            var audio = document.getElementById('audio-element');
-            audio.addEventListener('MozAudioAvailable', audioAvailable, false);
-            audio.addEventListener('loadedmetadata', loadedMetadata, false);
-            audio.play();
+	    var audio = document.getElementById('audio-element');
+	    audio.addEventListener('MozAudioAvailable', audioAvailable, false);
+	    audio.addEventListener('loadedmetadata', loadedMetadata, false);
 
-            loaded();
+	    // Allow user to play arbitrary audio file
+	    audio.addEventListener('dragover', handleDragOver, false);
+	    audio.addEventListener('drop', handleFileSelect, false);
+	    audio.play();
+
+	    function handleDragOver(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+		evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+	    }
+
+	    function handleFileSelect(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+		files = evt.dataTransfer.files;
+		if (files.length > 0) {
+		    var audio = document.getElementById('audio-element');
+		    audio.src = geturl(files[0]);
+		    // current time is messed up...
+		    // audio.currentTime = 0;
+		    
+		    audio.play();
+		}
+	    }
+	    function geturl(f) {
+		var url;
+		if(window.createObjectURL){
+		    url = window.createObjectURL(f)
+			}else if(window.createBlobURL){
+		    url = window.createBlobURL(f)
+			}else if(window.URL && window.URL.createObjectURL){
+		    url = window.URL.createObjectURL(f)
+			}else if(window.webkitURL && window.webkitURL.createObjectURL){
+		    url = window.webkitURL.createObjectURL(f)
+			}
+		return url;
+	    }
+
+	    loaded();
         });
 
 
-        function loaded() {
+	function loaded() {
 
             console.log("Browser plugin installed: " + zig.pluginInstalled);
             console.log("Browser plugin version: " + zig.pluginVersion);
